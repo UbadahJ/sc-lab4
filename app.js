@@ -59,6 +59,17 @@ class BudgetController {
         return item;
     }
 
+    deleteItem(type, id) {
+        let ids, index;
+
+        ids = this.data.items[type].map(function (current) {
+            return current.id;
+        });
+        index = ids.indexOf(id);
+
+        if (index !== -1) this.data.items[type].splice(index, 1);
+    }
+
     calculateBudget() {
         // calculate total income and expenses
         this.calculateTotal('exp');
@@ -141,12 +152,13 @@ class UIController {
         let html, element;
 
         // Create HTML string with placeholder text
+        let delete_button = `<div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div>`
         if (type === 'inc') {
             element = this.DOM_STRINGS.incomeContainer;
-            html = '<div class="item clearfix" id="inc-%id%"> <div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+            html = `<div class="item clearfix" id="inc-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div>${delete_button}</div></div>`;
         } else if (type === 'exp') {
             element = this.DOM_STRINGS.expensesContainer;
-            html = '<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>';
+            html = `<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div>${delete_button}</div></div>`;
         }
 
         // Replace the placeholder text with some actual data
@@ -156,6 +168,11 @@ class UIController {
 
         // Insert the HTML into the DOM
         document.querySelector(element).insertAdjacentHTML('beforeend', html);
+    }
+
+    deleteListItem(selectorID) {
+        let el = document.getElementById(selectorID);
+        el.parentNode.removeChild(el);
     }
 
     clearFields() {
@@ -217,6 +234,9 @@ class AppController {
         document.querySelector(dom.inputBtn).addEventListener('click', () => {
             this.addItem();
         });
+        document.querySelector(dom.container).addEventListener('click', (event) => {
+            this.deleteItem(event)
+        });
         document.addEventListener('keypress', (event) => {
             if (event.keyCode === 13 || event.which === 13) {
                 this.addItem();
@@ -244,6 +264,25 @@ class AppController {
             // 4. Clear the fields
             this.uiController.clearFields();
             // 5. Calculate and update budget.. called each time we entered a new element
+            this.updateBudget();
+        }
+    };
+
+    deleteItem(event) {
+        let itemID, splitID, type, ID;
+        itemID = event.target.parentNode.parentNode.parentNode.parentNode.id;
+        if (itemID) {
+            splitID = itemID.split('-');
+            type = splitID[0];
+            ID = parseInt(splitID[1]);
+
+            // 1. delete the item from the data structure
+            this.budgetController.deleteItem(type, ID);
+
+            // 2. Delete the item from the UI
+            this.uiController.deleteListItem(itemID);
+
+            // 3. Update and show the new budget
             this.updateBudget();
         }
     };
